@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ChildContract.sol";
 import "./libraries/bitsaveHelperLib.sol";
 
-
 contract Bitsave {
-
     // *** Contract parameters ***
     IERC20 public stableCoin;
     IERC20 public csToken;
@@ -59,27 +57,25 @@ contract Bitsave {
         address fetchedChildAddress = addressToUserBS[childOwnerAddress];
         if (
             fetchedChildAddress == address(0) // checks that the child contract exists
-            || // could be merged into one check but for readability
-            fetchedChildAddress != msg.sender // and that the child contract sent the request
+                    // could be merged into one check but for readability
+                || fetchedChildAddress != msg.sender // and that the child contract sent the request
         ) {
             revert BitsaveHelperLib.CallNotFromBitsave();
         }
         _;
     }
 
-    function joinBitsave(
-    ) public payable returns (address) {
+    function joinBitsave() public payable returns (address) {
         address ownerAddress = msg.sender;
         address currAddr = addressToUserBS[ownerAddress];
         if (currAddr != address(0)) {
             return currAddr;
         }
-        if (msg.value < JoinLimitFee)
+        if (msg.value < JoinLimitFee) {
             revert BitsaveHelperLib.AmountNotEnough();
+        }
         // deploy child contract for user
-        address userBSAddress = address(
-            new ChildBitsave(msg.sender, address(stableCoin))
-        );
+        address userBSAddress = address(new ChildBitsave(msg.sender, address(stableCoin)));
         addressToUserBS[ownerAddress] = userBSAddress;
         userCount += 1;
         emit BitsaveHelperLib.JoinedBitsave(ownerAddress);
@@ -90,18 +86,16 @@ contract Bitsave {
         return addressToUserBS[msg.sender];
     }
 
-    function sendAsOriginalToken(
-        address originalToken,
-        uint amount,
-        address ownerAddress
-    ) public payable fromABitsaveChildOnly(ownerAddress) returns (bool) {
+    function sendAsOriginalToken(address originalToken, uint256 amount, address ownerAddress)
+        public
+        payable
+        fromABitsaveChildOnly(ownerAddress)
+        returns (bool)
+    {
         // check amount sent
         // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
         // retrieve stable coin used from owner address
-        return BitsaveHelperLib.retrieveToken(
-            msg.sender,
-            address(stableCoin), amount
-        );
+        return BitsaveHelperLib.retrieveToken(msg.sender, address(stableCoin), amount);
         // convert to original token using crossChainSwap()
         // crossChainSwap(
         //     stableCoin,
@@ -112,11 +106,10 @@ contract Bitsave {
     }
 
     /// Edit internal vault data
-    function editInternalData(
-        uint _newCurrentVaultState,
-        uint _newTotalValueLocked,
-        address _newCsToken
-    ) public inhouseOnly {
+    function editInternalData(uint256 _newCurrentVaultState, uint256 _newTotalValueLocked, address _newCsToken)
+        public
+        inhouseOnly
+    {
         currentVaultState = _newCurrentVaultState;
         currentTotalValueLocked = _newTotalValueLocked;
         if (_newCsToken != address(0)) {
@@ -125,23 +118,18 @@ contract Bitsave {
     }
 
     /// Edit internal stablecoin data
-    function editStableCoin(
-        address _newStableCoin
-    ) public inhouseOnly {
+    function editStableCoin(address _newStableCoin) public inhouseOnly {
         if (_newStableCoin != address(0)) {
             stableCoin = IERC20(_newStableCoin);
         }
     }
 
     /// Edit internal vault data
-    function editFees(
-        uint _joinFee,
-        uint _savingFee
-    ) public inhouseOnly {
+    function editFees(uint256 _joinFee, uint256 _savingFee) public inhouseOnly {
         if (_joinFee != 0) {
             JoinLimitFee = _joinFee;
         }
-        if(_savingFee != 0) {
+        if (_savingFee != 0) {
             SavingFee = _savingFee;
             ChildContractGasFee = _savingFee / 20;
         }
@@ -155,40 +143,23 @@ contract Bitsave {
         }
     }
 
-    function handleNativeSaving(
-        uint amount,
-        address tokenToSave,
-        address userChildContractAddress
-    ) private returns(uint) {
+    function handleNativeSaving(uint256 amount, address tokenToSave, address userChildContractAddress)
+        private
+        returns (uint256)
+    {
         // check if native currency saving
         if (tokenToSave != address(0)) {
             // savingToken = tokenToSave;
             // amountToSave = amount;
             // perform withdrawal respective
-            bool tokenHasBeenWithdrawn = BitsaveHelperLib
-                .retrieveToken(
-                msg.sender,
-                tokenToSave,
-                amount
-            );
+            bool tokenHasBeenWithdrawn = BitsaveHelperLib.retrieveToken(msg.sender, tokenToSave, amount);
             if (!tokenHasBeenWithdrawn) {
                 revert BitsaveHelperLib.CanNotWithdrawToken("Txn failed");
             }
             // let us know you've removed the savings
-            emit BitsaveHelperLib.TokenWithdrawal(
-                msg.sender,
-                address(this),
-                amount
-            );
+            emit BitsaveHelperLib.TokenWithdrawal(msg.sender, address(this), amount);
             // approve child contract withdrawing token
-            require(
-                BitsaveHelperLib.approveAmount(
-                    userChildContractAddress,
-                    amount,
-                    tokenToSave
-                ),
-                "Savings invalid"
-            );
+            require(BitsaveHelperLib.approveAmount(userChildContractAddress, amount, tokenToSave), "Savings invalid");
         } else {
             amount = msg.value - SavingFee;
         }
@@ -201,14 +172,15 @@ contract Bitsave {
         uint8 penaltyPercentage,
         bool safeMode,
         address tokenToSave, // address 0 for native coin
-        uint amount // discarded for native token; takes msg.value - SavingFee instead
-    ) public registeredOnly(msg.sender) payable {
-
-        if (msg.value < SavingFee)
+        uint256 amount // discarded for native token; takes msg.value - SavingFee instead
+    ) public payable registeredOnly(msg.sender) {
+        if (msg.value < SavingFee) {
             revert BitsaveHelperLib.NotEnoughToPayGasFee();
+        }
 
-        if (block.timestamp > maturityTime)
+        if (block.timestamp > maturityTime) {
             revert BitsaveHelperLib.InvalidTime();
+        }
 
         // NOTE: For now, no safeMode since no swap contract
         if (safeMode) {
@@ -216,16 +188,10 @@ contract Bitsave {
         }
 
         // user's child contract address
-        address payable userChildContractAddress = getUserChildContractAddress(
-            msg.sender
-        );
+        address payable userChildContractAddress = getUserChildContractAddress(msg.sender);
 
         // Handle token sent
-        uint amountRetrieved = handleNativeSaving(
-            amount,
-            tokenToSave,
-            userChildContractAddress
-        );
+        uint256 amountRetrieved = handleNativeSaving(amount, tokenToSave, userChildContractAddress);
 
         // TODO:  perform conversion for stableCoin
         // functionality for safe mode
@@ -244,9 +210,8 @@ contract Bitsave {
         ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
 
         userChildContract.createSaving{
-                value: tokenToSave == address(0) ?
-                ChildContractGasFee + amountRetrieved : ChildContractGasFee
-            }(
+            value: tokenToSave == address(0) ? ChildContractGasFee + amountRetrieved : ChildContractGasFee
+        }(
             nameOfSaving,
             maturityTime,
             block.timestamp, // current time
@@ -259,11 +224,7 @@ contract Bitsave {
         );
 
         // emit saving created
-        emit BitsaveHelperLib.SavingCreated(
-            nameOfSaving,
-            amountRetrieved,
-            tokenToSave
-        );
+        emit BitsaveHelperLib.SavingCreated(nameOfSaving, amountRetrieved, tokenToSave);
     }
 
     ///
@@ -272,21 +233,19 @@ contract Bitsave {
     ///
     ///    string nameOfSaving
     ///
-    function incrementSaving(
-        string memory nameOfSavings,
-        address tokenToRetrieve,
-        uint256 amount
-    ) public payable registeredOnly(msg.sender) {
+    function incrementSaving(string memory nameOfSavings, address tokenToRetrieve, uint256 amount)
+        public
+        payable
+        registeredOnly(msg.sender)
+    {
         // initialize userChildContract
-        address payable userChildContractAddress = payable(
-            addressToUserBS[msg.sender]
-        );
+        address payable userChildContractAddress = payable(addressToUserBS[msg.sender]);
         ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
 
         address savingToken = userChildContract.getSavingTokenId(nameOfSavings);
         bool isNativeToken = savingToken == address(0);
         // todo: perform amount conversion and everything
-        uint savingPlusAmount = amount;
+        uint256 savingPlusAmount = amount;
         // todo: check savings detail by reading the storage of userChildContract
         bool isSafeMode = userChildContract.getSavingMode(nameOfSavings);
         if (isSafeMode) {
@@ -297,16 +256,11 @@ contract Bitsave {
             //     address(this)
             // );
             tokenToRetrieve = address(stableCoin);
-
         }
         if (!isNativeToken) {
             // approve child contract withdrawing token
             require(
-                BitsaveHelperLib.approveAmount(
-                    userChildContractAddress,
-                    savingPlusAmount,
-                    tokenToRetrieve
-                ),
+                BitsaveHelperLib.approveAmount(userChildContractAddress, savingPlusAmount, tokenToRetrieve),
                 "Savings invalid"
             );
         } else {
@@ -315,18 +269,15 @@ contract Bitsave {
         // call withdrawSavings
 
         userChildContract.incrementSaving{
-                value: isNativeToken ?
-                ChildContractGasFee + savingPlusAmount : ChildContractGasFee
-            }(nameOfSavings, amount, currentVaultState, currentTotalValueLocked);
+            value: isNativeToken ? ChildContractGasFee + savingPlusAmount : ChildContractGasFee
+        }(nameOfSavings, amount, currentVaultState, currentTotalValueLocked);
     }
 
-/// WITHDRAW savings
+    /// WITHDRAW savings
     ///
     ///    string nameOfSaving
     ///
-    function withdrawSaving(
-        string memory nameOfSavings
-    ) public registeredOnly(msg.sender) returns (bool) {
+    function withdrawSaving(string memory nameOfSavings) public registeredOnly(msg.sender) returns (bool) {
         // initialize user's child userChildContract
         ChildBitsave userChildContract = ChildBitsave(payable(addressToUserBS[msg.sender]));
         // call withdraw savings fn
@@ -337,11 +288,7 @@ contract Bitsave {
     receive() external payable {}
 
     // ---------- Private functions ---------------
-    function getUserChildContractAddress(
-        address myAddress
-    ) internal view returns (address payable) {
+    function getUserChildContractAddress(address myAddress) internal view returns (address payable) {
         return payable(addressToUserBS[myAddress]);
     }
-
 }
-

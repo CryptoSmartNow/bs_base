@@ -11,9 +11,9 @@ abstract contract BitsaveSetup {
     uint256 joinFee = 0.01 ether;
 
     // some users
-    address userWJoined = addr(1);
-    address userNJoined = addr(2);
-    address userRandom = addr(3);
+    address userWJoined = address(1);
+    address userNJoined = address(2);
+    address userRandom = address(3);
 }
 
 

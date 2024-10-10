@@ -6,7 +6,6 @@ import {Bitsave} from "../src/Bitsave.sol";
 import {BitsaveConfigs} from "../src/Config.sol";
 import {ChildBitsave} from "../src/ChildContract.sol";
 
-
 contract BitsaveTest is Test, BitsaveConfigs {
     Bitsave public bitsave;
     ChildBitsave public childBitsave;
@@ -16,8 +15,7 @@ contract BitsaveTest is Test, BitsaveConfigs {
         console.log(bitsave.masterAddress(), address(this));
     }
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function test_SetStableCoin() public {
         assertEq(address(bitsave.stableCoin()), stableCoin);
@@ -30,7 +28,6 @@ contract BitsaveTest is Test, BitsaveConfigs {
     function test_SetMasterAddr() public {
         assertEq(address(bitsave.masterAddress()), address(this));
     }
-
 
     // function test_Increment() public {
     //     counter.increment();

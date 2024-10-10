@@ -6,7 +6,6 @@ import "./libraries/bitsaveHelperLib.sol";
 import "./Bitsave.sol";
 
 contract ChildBitsave {
-
     // *** Contract parameters ***
     address payable public bitsaveAddress;
     IERC20 public stableCoin;
@@ -14,7 +13,7 @@ contract ChildBitsave {
 
     // *** Contract Storage ***
     // total interests gathered; v1 shows points
-    uint public totalPoints;
+    uint256 public totalPoints;
 
     // structure of saving data
     struct SavingDataStruct {
@@ -23,7 +22,7 @@ contract ChildBitsave {
         address tokenId;
         uint256 interestAccumulated;
         uint256 startTime;
-        uint penaltyPercentage;
+        uint256 penaltyPercentage;
         uint256 maturityTime;
         bool isSafeMode;
     }
@@ -35,17 +34,17 @@ contract ChildBitsave {
         string[] savingsNames;
     }
 
-    function updatePoints(uint newPoint) private {
+    function updatePoints(uint256 newPoint) private {
         totalPoints = totalPoints + newPoint;
     }
 
     function calculateAndUpdatePoints(
-        uint savingAmount,
-        uint endTime,
-        uint startTime,
-        uint currentVaultState,
-        uint currentTotalValueLocked
-    ) internal returns (uint accumulatedInterest){
+        uint256 savingAmount,
+        uint256 endTime,
+        uint256 startTime,
+        uint256 currentVaultState,
+        uint256 currentTotalValueLocked
+    ) internal returns (uint256 accumulatedInterest) {
         accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
             savingAmount,
             endTime - startTime, // time interval
@@ -70,24 +69,26 @@ contract ChildBitsave {
     }
 
     modifier bitsaveOnly() {
-        if (msg.sender != bitsaveAddress)
+        if (msg.sender != bitsaveAddress) {
             revert BitsaveHelperLib.CallNotFromBitsave();
+        }
         _;
     }
+
     function addSavingName(string memory _name) private {
         savingsNamesVar.savingsNames.push(_name);
     }
 
     // Contract Getters
-    function getSavingMode(string memory nameOfSaving) view external returns (bool) {
+    function getSavingMode(string memory nameOfSaving) external view returns (bool) {
         return savings[nameOfSaving].isSafeMode;
     }
 
-    function getSavingInterest(string memory nameOfSaving) view external returns (uint256) {
+    function getSavingInterest(string memory nameOfSaving) external view returns (uint256) {
         return savings[nameOfSaving].interestAccumulated;
     }
 
-    function getSavingTokenId(string memory nameOfSaving) view external returns (address) {
+    function getSavingTokenId(string memory nameOfSaving) external view returns (address) {
         return savings[nameOfSaving].tokenId;
     }
 
@@ -95,10 +96,7 @@ contract ChildBitsave {
         return savingsNamesVar;
     }
 
-
-    function getSaving(
-        string memory nameOfSaving
-    ) public view returns (SavingDataStruct memory) {
+    function getSaving(string memory nameOfSaving) public view returns (SavingDataStruct memory) {
         return savings[nameOfSaving];
     }
 
@@ -113,7 +111,7 @@ contract ChildBitsave {
         bool isSafeMode,
         uint256 currentVaultState,
         uint256 currentTotalValueLocked
-    ) public payable bitsaveOnly returns (uint) {
+    ) public payable bitsaveOnly returns (uint256) {
         // ensure saving does not exist; !
         if (savings[name].isValid) revert BitsaveHelperLib.InvalidSaving();
         // check if end time valid
@@ -123,31 +121,18 @@ contract ChildBitsave {
         uint256 savingsAmount = amountToRetrieve;
 
         if (isSafeMode) {
-            BitsaveHelperLib.retrieveToken(
-                bitsaveAddress,
-                address(stableCoin),
-                amountToRetrieve
-            );
+            BitsaveHelperLib.retrieveToken(bitsaveAddress, address(stableCoin), amountToRetrieve);
         } else {
             if (tokenId != address(0)) {
-                BitsaveHelperLib.retrieveToken(
-                    bitsaveAddress,
-                    tokenId,
-                    amountToRetrieve
-                );
+                BitsaveHelperLib.retrieveToken(bitsaveAddress, tokenId, amountToRetrieve);
             } else {
                 // case native token
                 savingsAmount = msg.value;
             }
         }
 
-        uint accumulatedInterest = calculateAndUpdatePoints(
-            savingsAmount,
-            maturityTime,
-            startTime,
-            currentVaultState,
-            currentTotalValueLocked
-        );
+        uint256 accumulatedInterest =
+            calculateAndUpdatePoints(savingsAmount, maturityTime, startTime, currentVaultState, currentTotalValueLocked);
 
         // store saving to map of savings
         savings[name] = SavingDataStruct({
@@ -164,11 +149,7 @@ contract ChildBitsave {
         // addSavingName(name);
         addSavingName(name);
 
-        emit BitsaveHelperLib.SavingCreated(
-            name,
-            amountToRetrieve,
-            tokenId
-        );
+        emit BitsaveHelperLib.SavingCreated(name, amountToRetrieve, tokenId);
 
         return 1;
     }
@@ -179,8 +160,7 @@ contract ChildBitsave {
         uint256 savingPlusAmount,
         uint256 currentVaultState,
         uint256 currentTotalValueLocked
-    ) public payable bitsaveOnly returns (uint) {
-
+    ) public payable bitsaveOnly returns (uint256) {
         // fetch savings data
         SavingDataStruct storage toFundSavings = savings[name];
         if (!toFundSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
@@ -190,33 +170,18 @@ contract ChildBitsave {
 
         // handle retrieving token from contract
         if (toFundSavings.isSafeMode) {
-            BitsaveHelperLib.retrieveToken(
-                bitsaveAddress,
-                address(stableCoin),
-                savingPlusAmount
-            );
+            BitsaveHelperLib.retrieveToken(bitsaveAddress, address(stableCoin), savingPlusAmount);
         } else {
             if (!isNativeToken) {
-                BitsaveHelperLib.retrieveToken(
-                    bitsaveAddress,
-                    toFundSavings.tokenId,
-                    savingPlusAmount
-                );
+                BitsaveHelperLib.retrieveToken(bitsaveAddress, toFundSavings.tokenId, savingPlusAmount);
             } else {
-                require(
-                    msg.value >= savingPlusAmount,
-                    "Invalid saving increment value sent"
-                );
+                require(msg.value >= savingPlusAmount, "Invalid saving increment value sent");
                 savingPlusAmount = msg.value;
             }
         }
 
-        uint extraInterest = calculateAndUpdatePoints(
-            savingPlusAmount,
-            toFundSavings.maturityTime,
-            block.timestamp,
-            currentVaultState,
-            currentTotalValueLocked
+        uint256 extraInterest = calculateAndUpdatePoints(
+            savingPlusAmount, toFundSavings.maturityTime, block.timestamp, currentVaultState, currentTotalValueLocked
         );
 
         // calculate new interest
@@ -226,12 +191,7 @@ contract ChildBitsave {
         // save new savings data
         savings[name] = toFundSavings;
 
-        emit BitsaveHelperLib.SavingIncremented(
-            name,
-            savingPlusAmount,
-            toFundSavings.amount,
-            toFundSavings.tokenId
-        );
+        emit BitsaveHelperLib.SavingIncremented(name, savingPlusAmount, toFundSavings.amount, toFundSavings.tokenId);
 
         return toFundSavings.interestAccumulated;
     }
@@ -240,14 +200,12 @@ contract ChildBitsave {
         SavingDataStruct storage toWithdrawSavings = savings[name];
         // check if saving exit
         if (!toWithdrawSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
-        uint amountToWithdraw = toWithdrawSavings.amount;
+        uint256 amountToWithdraw = toWithdrawSavings.amount;
         Bitsave bitsave = Bitsave(bitsaveAddress);
         // check if saving is mature
         if (block.timestamp < toWithdrawSavings.maturityTime) {
             // remove penalty from savings
-            amountToWithdraw = (
-                toWithdrawSavings.amount * (100 - toWithdrawSavings.penaltyPercentage)
-            ) / 100;
+            amountToWithdraw = (toWithdrawSavings.amount * (100 - toWithdrawSavings.penaltyPercentage)) / 100;
         } else {
             // TODO: handle interest point management
             // bitsave.handleUsersInterest(
@@ -263,39 +221,22 @@ contract ChildBitsave {
         bool isDelivered = false;
         if (toWithdrawSavings.isSafeMode) {
             // approve withdrawal from parent contract
-            BitsaveHelperLib.approveAmount(
-                bitsaveAddress,
-                amountToWithdraw,
-                address(stableCoin)
-            );
+            BitsaveHelperLib.approveAmount(bitsaveAddress, amountToWithdraw, address(stableCoin));
             // call parent for conversion
-            isDelivered = bitsave
-            .sendAsOriginalToken(
-                tokenId,
-                amountToWithdraw,
-                ownerAddress
-            );
+            isDelivered = bitsave.sendAsOriginalToken(tokenId, amountToWithdraw, ownerAddress);
         } else {
             if (tokenId == address(0)) {
-                (bool sent, bytes memory data) =
-                                    ownerAddress.call{value: amountToWithdraw}("");
+                (bool sent, bytes memory data) = ownerAddress.call{value: amountToWithdraw}("");
                 require(sent, "Couldn't send funds");
             } else {
-                isDelivered = BitsaveHelperLib.transferToken(
-                    toWithdrawSavings.tokenId,
-                    ownerAddress,
-                    amountToWithdraw
-                );
-
+                isDelivered = BitsaveHelperLib.transferToken(toWithdrawSavings.tokenId, ownerAddress, amountToWithdraw);
             }
         }
         // Delete savings; ensure saving is deleted/made invalid
-        if(isDelivered) {
+        if (isDelivered) {
             savings[name].isValid = false;
 
-            emit BitsaveHelperLib.SavingWithdrawn(
-                name
-            );
+            emit BitsaveHelperLib.SavingWithdrawn(name);
 
             return "savings withdrawn successfully";
         }
