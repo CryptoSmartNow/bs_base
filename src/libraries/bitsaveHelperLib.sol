@@ -30,7 +30,7 @@ library BitsaveHelperLib {
     error CallNotFromBitsave();
 
     // Events
-    event JoinedBitsave(address userAddress);
+    event JoinedBitsave(address indexed userAddress);
     event SavingCreated(string nameOfSaving, uint256 amount, address token);
     event SavingIncremented(string nameOfSaving, uint256 amountAdded, uint256 totalAmountNow, address token);
     event SavingWithdrawn(string nameOfSaving);
