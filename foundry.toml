@@ -5,8 +5,8 @@ libs = ["lib"]
 solc_version = "0.8.23"
 
 [rpc_endpoints]
-base = "https://mainnet.base.org"
-baseSepolia = "https://sepolia.base.org"
+base = "${BASE_MAINNET_RPC}"
+baseSepolia = "${BASE_SEPOLIA_RPC}"
 
 [etherscan]
 baseSepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
