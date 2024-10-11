@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Bitsave} from "../src/Bitsave.sol";
+import {Bitsave, BitsaveHelperLib} from "../src/Bitsave.sol";
 import {BitsaveConfigs} from "../src/Config.sol";
 import {ChildBitsave} from "../src/ChildContract.sol";
 
@@ -27,6 +27,14 @@ contract BitsaveTest is Test, BitsaveConfigs {
 
     function test_SetMasterAddr() public {
         assertEq(address(bitsave.masterAddress()), address(this));
+    }
+
+    function test_RevertIf_JoinWithLowFee() public {
+       vm.expectPartialRevert(BitsaveHelperLib.AmountNotEnough.selector);
+       address newUser = address(1);
+       vm.deal(newUser, 1 ether);
+       vm.prank(newUser);
+       bitsave.joinBitsave{value: 0.000000001 ether}();
     }
 
     // function test_Increment() public {
