@@ -266,6 +266,8 @@ contract Bitsave {
         } else {
             savingPlusAmount = msg.value;
         }
+
+        uint256 amountRetrieved = handleNativeSaving(amount, savingToken, userChildContractAddress);
         // call withdrawSavings
 
         userChildContract.incrementSaving{
