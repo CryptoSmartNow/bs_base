@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Bitsave} from "../src/Bitsave.sol";
+import {Bitsave, BitsaveHelperLib} from "../src/Bitsave.sol";
 import {USDX} from "./USDX.sol";
 import {ChildBitsave} from "../src/ChildContract.sol";
 
@@ -70,6 +70,23 @@ contract BitsaveTest is Test, BitsaveSetup {
         uint finalBalance = userWJoined.balance;
 
         assertEq(finalBalance - initialBalance, savedAmount);
+        vm.stopPrank();
+    }
+
+    function test_RevertIf_InvalidSaving() public {
+
+        vm.startPrank(userWJoined);
+        uint initialBalance = userWJoined.balance;
+
+        ChildBitsave childContract = getChildContract();
+        vm.warp(closeTime);
+        bitsave.withdrawSaving(school);
+        uint finalBalance = userWJoined.balance;
+
+        assertEq(finalBalance - initialBalance, savedAmount);
+
+        vm.expectPartialRevert(BitsaveHelperLib.InvalidSaving.selector);
+        bitsave.withdrawSaving(school);
         vm.stopPrank();
     }
 

@@ -31,11 +31,11 @@ library BitsaveHelperLib {
 
     // Events
     event JoinedBitsave(address indexed userAddress);
-    event SavingCreated(string nameOfSaving, uint256 amount, address token);
-    event SavingIncremented(string nameOfSaving, uint256 amountAdded, uint256 totalAmountNow, address token);
-    event SavingWithdrawn(string nameOfSaving);
-    event TokenWithdrawal(address indexed from, address to, uint256 amount);
-    event Received(address, uint256);
+    event SavingCreated(string indexed nameOfSaving, uint256 amount, address token);
+    event SavingIncremented(string indexed nameOfSaving, uint256 amountAdded, uint256 totalAmountNow, address token);
+    event SavingWithdrawn(string indexed nameOfSaving);
+    event TokenWithdrawal(address indexed from, address indexed to, uint256 amount);
+    event Received(address indexed, uint256);
 
     function approveAmount(address toApproveUserAddress, uint256 amountToApprove, address targetToken)
         internal
