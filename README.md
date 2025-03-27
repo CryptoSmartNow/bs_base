@@ -1,15 +1,13 @@
-## Foundry
+# Bitsave
+the volatile nature of the crypto market. 
+The contract has an interest formula based on the bitsave protocol to 
+reward users points that are not fixed but adjust based on market
+values. 
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
+## Deployer combination
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 1135
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 8453
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 44787
 
 https://book.getfoundry.sh/
 
