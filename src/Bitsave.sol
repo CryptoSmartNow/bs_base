@@ -23,7 +23,8 @@ contract Bitsave {
     uint256 public currentTotalValueLocked;
 
     // *** savings values ***
-    uint256 public JoinLimitFee = 0.0001 ether;
+    // editing value from 0.0001 to 1wei
+    uint256 public JoinLimitFee = 1;
     uint256 public SavingFee = 0.0001 ether;
     uint256 public ChildContractGasFee = SavingFee / 20;
 
